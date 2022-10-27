@@ -1,0 +1,216 @@
+import 'package:assets_audio_player/assets_audio_player.dart';
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:muzify/Playlist/Add_song_playlist.dart';
+import 'package:muzify/functions/functions.dart';
+import 'package:muzify/models/box_class.dart';
+import 'package:muzify/widgets/miniplayer.dart';
+import 'package:on_audio_query/on_audio_query.dart';
+
+import '../open audio/openaudio.dart';
+
+class InsideList extends StatefulWidget {
+  String playlistName;
+
+  InsideList({Key? key, required this.playlistName}) : super(key: key);
+
+  @override
+  State<InsideList> createState() => _InsideListState();
+}
+
+class _InsideListState extends State<InsideList> {
+  final box = Boxes.getinstance();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+    
+      appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 93, 19, 168),
+        elevation: 10,
+        title: Text(
+          widget.playlistName,
+          maxLines: 1,
+          style: TextStyle(
+              overflow: TextOverflow.ellipsis,
+              fontFamily: "poppinz",
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+              onPressed: () {
+                showModalBottomSheet(
+                    backgroundColor: Color(0xff091127),
+                    // shape: const RoundedRectangleBorder(
+                    //   borderRadius: BorderRadius.vertical(
+                    //     top: Radius.circular(20),
+                    //   ),
+                    // ),
+                    context: context,
+                    builder: (context) {
+                      return songadd(
+                        playlistName: widget.playlistName,
+                      );
+                    });
+              },
+              icon: const Icon(
+                Icons.playlist_add,
+                color: Colors.white,
+                size: 30,
+              ))
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                  // ignore: unnecessary_const
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                     Color.fromARGB(255, 93, 19, 168),
+                     Color.fromARGB(255, 36, 33, 33)
+                    ],
+                  )),
+              child: Padding(
+                padding: const EdgeInsets.all(15.0),
+                child: ValueListenableBuilder(
+                  valueListenable: box.listenable(),
+                  builder: (context, boxes, _) {
+                    final playlistSongs = box.get(widget.playlistName)!;
+                    return playlistSongs.isEmpty
+                        ? SizedBox(
+                            child: Center(
+                              child: Text(
+                                "No songs Here",
+                                style: TextStyle(
+                                    fontFamily: "poppinz",
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: playlistSongs.length,
+                            itemBuilder: (context, index) => GestureDetector(
+                              onTap: () {
+                                for (var element in playlistSongs) {
+                                  playlistsplay.add(Audio.file(element.uri!,
+                                      metas: Metas(
+                                        title: element.title,
+                                        id: element.id.toString(),
+                                        artist: element.artist,
+                                      )));
+                                }
+
+                                PlayMyAudio(
+                                        allsongs: playlistsplay, index: index)
+                                    .openAsset(
+                                        index: index, audios: playlistsplay);
+
+                                showBottomSheet(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(45),
+                                    ),
+                                    backgroundColor:
+                                        Colors.blueGrey.withOpacity(0.8),
+                                    context: context,
+                                    builder: (ctx) => MiniPlayer(
+                                          index: index,
+                                          audiosongs: playlistsplay,
+                                        ));
+                                // Recent.AddToRecent(
+                                //     songId: audiosongs[index].metas.id!);
+                              },
+                              child: ListTile(
+                                leading: SizedBox(
+                                  height: 50,
+                                  width: 50,
+                                  child: QueryArtworkWidget(
+                                    id: playlistSongs[index].id!,
+                                    type: ArtworkType.AUDIO,
+                                    artworkBorder: BorderRadius.circular(15),
+                                    artworkFit: BoxFit.cover,
+                                    nullArtworkWidget: Container(
+                                      height: 47,
+                                      width: 47,
+                                      decoration: const BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(25)),
+                                        image: DecorationImage(
+                                          image: AssetImage(
+                                              "assets/images/splashtwo.jpg"),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  playlistSongs[index].title!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontFamily: "poppinz",
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 17,
+                                      color: Colors.white),
+                                ),
+                                subtitle: Text(
+                                  playlistSongs[index].artist!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontFamily: "poppinz",
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.white),
+                                ),
+                                trailing: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      playlistSongs.removeAt(index);
+                                    });
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content: Text(
+                                        "Removed From Playlist",
+                                        style: TextStyle(
+                                          fontFamily: "poppinz",
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ));
+                                  },
+                                  icon: Icon(Icons.delete, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          );
+                  },
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
